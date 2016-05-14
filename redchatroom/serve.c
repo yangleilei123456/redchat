@@ -1,9 +1,8 @@
-#define USERMAX 256
-#define FDSIZE 200
-int socket_bind()
+#include"redchat.h"
+static int socket_bind()
 {
 	int listenfd = socket(AF_INET,SOCK_STREAM,0);
-	assert(sockfd != -1);
+	assert(listenfd != -1);
 	struct sockaddr_in address;
 	bzero(&address,sizeof(address));
 	address.sin_family=AF_INET;
@@ -15,14 +14,14 @@ int socket_bind()
 	assert(ret != -1);
 	return listenfd;
 }
-void add_event(int epollfd,int fd,int state)
+static void add_event(int epollfd,int fd,int state)
 {
 	struct epoll_event ev;
 	ev.events = state;
 	ev.data.fd = fd;
 	epoll_ctl(epollfd,EPOLL_CTL_DEL,fd,&ev);
 }
-void hand_accept(int epollfd,int listenfd)
+static void hand_accept(int epollfd,int listenfd)
 {
 	struct sockaddr_in client;
 	socklen_t cliaddrlen;
@@ -30,14 +29,21 @@ void hand_accept(int epollfd,int listenfd)
 	assert(clientfd != -1);
 	add_event(epollfd,clientfd,EPOLLIN);
 }
-void delete_event(int epollfd,int fd,int state)
+static void delete_event(int epollfd,int fd)
 {
 	struct epoll_event ev;
-	ev.events= state;
 	ev.data.fd =fd;
 	epoll_ctl(epollfd,EPOLL_CTL_DEL,fd,&ev);
 }
-bool parse_namepwd(char *buff)
+static bool check_Norepeat(char *name ,char *password)
+{
+	bool res = true;
+	/////////////////////////////////////////////////////mysql_check;
+	free(name);
+	free(password);
+	return res;
+}
+static bool parse_namepwd(char *buff)
 {
 	bool res = true;
 	cJSON *root=cJSON_Parse(buff);
@@ -47,11 +53,11 @@ bool parse_namepwd(char *buff)
 		printf("No name\n");
 		res = false;
 		return res;
-	}
+	} 
 	char *name=name1->valuestring;
 	cJSON *password1=cJSON_GetObjectItem(root,"password");
 	if(NULL == password1)
-	{
+	{ 
 		printf("No password\n");
 		res = false;
 		return res;
@@ -61,39 +67,45 @@ bool parse_namepwd(char *buff)
 	if(!res)
 	{
 		printf("resgister failed,have existing\n");
-	}
+	} 
 	return res;
 }
-void hand_data(int epollfd,int fd)
+static void hand_commondata(char *buff)
+{
+
+}
+static void hand_data(int epollfd,int fd)
 {
 	char buff[128]={0};
 	int num = read(fd,buff,128);
 	if(num <= 0)
-	{
+	{ 
 		perror("read exception\n");
 		close(fd);
-		delete_event(epollfd,fd,NULL);
+		delete_event(epollfd,fd);
 		return ;
 	}
 	if(buff[0] != '#')
 	{
 		//密文data;
 		bool res=parse_namepwd(buff);
+		char *buff1=NULL;
 		if(res)
-			buff="register successful";
+			buff1="yes";
 		else
-			buff="register failed";
-		write(fd,buff,sizeof(buf));
+			buff1="no";
+		strncpy(buff,buff1,sizeof(buff1));
+		write(fd,buff,sizeof(buff));
 		close(fd);
-		delete_event(epollfd,fd,NULL);
+		delete_event(epollfd,fd);
 		return ;
 	}
 	else 
 	{
-		//common data
+		hand_commondata(buff);
 	}
 }
-void hand_events(int epollfd,struct epoll_event *event,int num,int listenfd)
+static void hand_events(int epollfd,struct epoll_event *event,int num,int listenfd)
 {
 	int i=0;
 	int fd;
@@ -106,7 +118,7 @@ void hand_events(int epollfd,struct epoll_event *event,int num,int listenfd)
 			hand_data(epollfd,fd);
 	}
 }
-void do_epoll(int listenfd)
+static void do_epoll(int listenfd)
 {
 	int epollfd;
 	int ret;
@@ -115,9 +127,10 @@ void do_epoll(int listenfd)
 	add_event(epollfd,listenfd,EPOLLIN);
 	while(1)
 	{
-		epoll_wait(epollfd,events,USERMAX,-1);
-		ret = hand_events(epollfd,events,ret,listenfd);
+		ret =epoll_wait(epollfd,events,USERMAX,-1);
+		hand_events(epollfd,events,ret,listenfd);
 	}
+	close(epollfd);
 }
 int main()
 {
