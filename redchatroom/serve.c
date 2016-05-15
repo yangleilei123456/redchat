@@ -19,7 +19,7 @@ static void add_event(int epollfd,int fd,int state)
 	struct epoll_event ev;
 	ev.events = state;
 	ev.data.fd = fd;
-	epoll_ctl(epollfd,EPOLL_CTL_DEL,fd,&ev);
+	epoll_ctl(epollfd,EPOLL_CTL_ADD,fd,&ev);
 }
 static void hand_accept(int epollfd,int listenfd)
 {
@@ -27,6 +27,7 @@ static void hand_accept(int epollfd,int listenfd)
 	socklen_t cliaddrlen;
 	int clientfd=accept(listenfd,(struct sockaddr*)&client,&cliaddrlen);
 	assert(clientfd != -1);
+	printf("clientfd %d\n",clientfd);
 	add_event(epollfd,clientfd,EPOLLIN);
 }
 static void delete_event(int epollfd,int fd)
@@ -113,7 +114,10 @@ static void hand_events(int epollfd,struct epoll_event *event,int num,int listen
 	{
 		fd = event[i].data.fd;
 		if((fd == listenfd)&&(event[i].events & EPOLLIN))
+		{
+			printf("accept come\n");
 			hand_accept(epollfd,listenfd);
+		}
 		else if(event[i].events & EPOLLIN)
 			hand_data(epollfd,fd);
 	}
@@ -127,6 +131,7 @@ static void do_epoll(int listenfd)
 	add_event(epollfd,listenfd,EPOLLIN);
 	while(1)
 	{
+		printf("dengdai wait\n");
 		ret =epoll_wait(epollfd,events,USERMAX,-1);
 		hand_events(epollfd,events,ret,listenfd);
 	}

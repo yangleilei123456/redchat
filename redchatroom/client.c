@@ -1,10 +1,10 @@
 #include"redchat.h"
 void print()
 {
-	printf("		***********************\n");
+	printf("****************************\n");
 	printf("	1:register()\n");
 	printf("	2:login()\n");
-	printf("		***********************\n");
+	printf("*****************************\n");
 }
 int socket_bind()
 {
@@ -27,24 +27,27 @@ int socket_bind()
 }
 bool register_namepwd(int sockfd)
 {
+	///////////////////////////////
 	bool res = true;
 	cJSON *root;
 	root = cJSON_CreateObject();
 	if(NULL == root)
-	{
+	{ 
 		printf("createobject error\n");
 		res = false;
 		return res;
-	} 
-	char buff[128]={0};
+	}
 	printf("please input usename\n");
+	char buff[128]={0};
 	fgets(buff,128,stdin);
+	printf("usename: %s",buff);
 	cJSON_AddStringToObject(root,"usename",buff);
 	printf("please input password\n");
 	fgets(buff,128,stdin);
+	printf("password: %s",buff);
 	cJSON_AddStringToObject(root,"password",buff);
 	char *s=cJSON_Print(root);
-	strncpy(s,buff,128);
+	strncpy(buff,s,128);
 	write(sockfd,buff,strlen(buff));
 	read(sockfd,buff,128);
 	if(strcmp(buff,"no") == 0)
@@ -52,7 +55,7 @@ bool register_namepwd(int sockfd)
 		res=false;
 		printf("register failed\n");
 	} 
-	else
+	else if(strcmp(buff,"yes")==0)
 	{
 		printf("register successful,please login\n");
 	}
@@ -62,11 +65,13 @@ bool register_namepwd(int sockfd)
 }
 bool registe()
 {
+	////////////////////////////////
 	bool res = true;
 	int sockfd = socket_bind();
 	if(sockfd == 1)
-	{
+	{ 
 		res = false;
+		return res;
 	}
 	res = register_namepwd(sockfd);
 	return res;
@@ -78,10 +83,12 @@ bool login()
 }
 bool choose()
 {
+	print();
 	bool res = true;
 	printf("please choose (1 or 2)\n");
 	int flag =0;
 	scanf("%d",&flag);
+	getchar();//清掉回车
 	switch(flag)
 	{
 		case 1:res=registe();break;
