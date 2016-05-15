@@ -40,6 +40,40 @@ static bool check_Norepeat(char *name ,char *password)
 {
 	bool res = true;
 	/////////////////////////////////////////////////////mysql_check;
+	MYSQL my_connection;
+	MYSQL_RES *res_ptr;
+	mysql_init(&my_connection);
+	if(mysql_real_connect(&my_connection,"127.0.0.1","root","123456",
+				"WeChat_Lucky_Money",3306,NULL,0))
+	{
+	//	const char *sql="select *from register_login where usename =name";
+const	char *sql = "insert into register_login(usename,password) values(name,password)";
+
+	 	if(mysql_query(&my_connection,sql))
+	 	{
+			res_ptr = mysql_store_result(&my_connection);
+			printf("insert yes");
+           // mysql_fetch_row(res_ptr);
+	/*		if(0)
+	  		{ 
+				res = false;
+			}
+		 	else
+	 	 	{
+				if(!mysql_query(&my_connection,sql))
+				{
+					printf("insert error\n");
+					res = false;
+	 			} 
+	 		}*/
+		} 
+	} 
+	else
+	{
+		perror("mysql connect failed\n");
+	} 
+	mysql_free_result(res_ptr);
+	mysql_close(&my_connection);
 	free(name);
 	free(password);
 	return res;
